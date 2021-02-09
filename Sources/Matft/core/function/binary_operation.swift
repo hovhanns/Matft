@@ -342,8 +342,15 @@ extension Matft{
             - r_mfarray: right mfarray
      */
     public static func less(_ l_mfarray: MfArray, _ r_mfarray: MfArray) -> MfArray{
-        let diff = r_mfarray - l_mfarray
-        return to_Bool(diff.clip(min: 0, max: nil))
+        let (l_mfarray, r_mfarray, mftype) = biop_broadcast_to(l_mfarray, r_mfarray)
+        switch MfType.storedType(mftype) {
+        case .Float:
+            return to_Bool_mm_greater(l_mfarray: r_mfarray, r_mfarray: l_mfarray, dummyU: Float.zero)
+        case .Double:
+            return to_Bool_mm_greater(l_mfarray: r_mfarray, r_mfarray: l_mfarray, dummyU: Double.zero)
+        }
+        //let diff = r_mfarray - l_mfarray
+        //return to_Bool(diff.clip(min: 0, max: nil))
     }
     /**
         Check left mfarray's elements are less than right scalar in element-wise. Returned mfarray's type will be bool.
@@ -352,8 +359,14 @@ extension Matft{
            - r_scalar: right scalar conformed to MfTypable
     */
     public static func less<T: MfTypable>(_ l_mfarray: MfArray, _ r_scalar: T) -> MfArray{
-        let diff = r_scalar - l_mfarray
-        return to_Bool(diff.clip(min: 0, max: nil))
+        switch l_mfarray.storedType {
+        case .Float:
+            return to_Bool_ms_less(l_mfarray: l_mfarray, r_scalar: Float.from(r_scalar))
+        case .Double:
+            return to_Bool_ms_less(l_mfarray: l_mfarray, r_scalar: Double.from(r_scalar))
+        }
+        //let diff = r_scalar - l_mfarray
+        //return to_Bool(diff.clip(min: 0, max: nil))
     }
     /**
         Check left scalar is less than right mfarray's elements in element-wise. Returned mfarray's type will be bool.
@@ -362,8 +375,14 @@ extension Matft{
            - r_mfarray: right mfarray
     */
     public static func less<T: MfTypable>(_ l_scalar: T, _ r_mfarray: MfArray) -> MfArray{
-        let diff = r_mfarray - l_scalar
-        return to_Bool(diff.clip(min: 0, max: nil))
+        switch r_mfarray.storedType {
+        case .Float:
+            return to_Bool_ms_greater(l_mfarray: r_mfarray, r_scalar: Float.from(l_scalar))
+        case .Double:
+            return to_Bool_ms_greater(l_mfarray: r_mfarray, r_scalar: Double.from(l_scalar))
+        }
+        //let diff = r_mfarray - l_scalar
+        //return to_Bool(diff.clip(min: 0, max: nil))
     }
     /**
         Check left mfarray's elements are less equal than right ones in element-wise. Returned mfarray's type will be bool.
@@ -372,8 +391,15 @@ extension Matft{
             - r_mfarray: right mfarray
      */
     public static func less_equal(_ l_mfarray: MfArray, _ r_mfarray: MfArray) -> MfArray{
-        let diff = r_mfarray - l_mfarray
-        return to_Bool(diff.sign() + Float(1))
+        let (l_mfarray, r_mfarray, mftype) = biop_broadcast_to(l_mfarray, r_mfarray)
+        switch MfType.storedType(mftype) {
+        case .Float:
+            return to_Bool_mm_greater(l_mfarray: l_mfarray, r_mfarray: r_mfarray, dummyU: Float.zero, lesseq: true)
+        case .Double:
+            return to_Bool_mm_greater(l_mfarray: l_mfarray, r_mfarray: r_mfarray, dummyU: Double.zero, lesseq: true)
+        }
+        //let diff = r_mfarray - l_mfarray
+        //return to_Bool(diff.sign() + Float(1))
     }
     /**
         Check left mfarray's elements are less equal than right scalar in element-wise. Returned mfarray's type will be bool.
@@ -382,8 +408,14 @@ extension Matft{
            - r_scalar: right scalar conformed to MfTypable
     */
     public static func less_equal<T: MfTypable>(_ l_mfarray: MfArray, _ r_scalar: T) -> MfArray{
-        let diff = r_scalar - l_mfarray
-        return to_Bool(diff.sign() + Float(1))
+        switch l_mfarray.storedType {
+        case .Float:
+            return to_Bool_ms_less(l_mfarray: l_mfarray, r_scalar: Float.from(r_scalar), greatereq: true)
+        case .Double:
+            return to_Bool_ms_less(l_mfarray: l_mfarray, r_scalar: Double.from(r_scalar), greatereq: true)
+        }
+        //let diff = r_scalar - l_mfarray
+        //return to_Bool(diff.sign() + Float(1))
     }
     /**
         Check left scalar is less equal than right mfarray's elements in element-wise. Returned mfarray's type will be bool.
@@ -392,8 +424,14 @@ extension Matft{
            - r_mfarray: right mfarray
     */
     public static func less_equal<T: MfTypable>(_ l_scalar: T, _ r_mfarray: MfArray) -> MfArray{
-        let diff = r_mfarray - l_scalar
-        return to_Bool(diff.sign() + Float(1))
+        switch r_mfarray.storedType {
+        case .Float:
+            return to_Bool_ms_greater(l_mfarray: r_mfarray, r_scalar: Float.from(l_scalar), lesseq: true)
+        case .Double:
+            return to_Bool_ms_greater(l_mfarray: r_mfarray, r_scalar: Double.from(l_scalar), lesseq: true)
+        }
+        //let diff = r_mfarray - l_scalar
+        //return to_Bool(diff.sign() + Float(1))
     }
     
     /**
@@ -403,8 +441,15 @@ extension Matft{
             - r_mfarray: right mfarray
      */
     public static func greater(_ l_mfarray: MfArray, _ r_mfarray: MfArray) -> MfArray{
-        let diff = l_mfarray - r_mfarray
-        return to_Bool(diff.clip(min: 0, max: nil))
+        let (l_mfarray, r_mfarray, mftype) = biop_broadcast_to(l_mfarray, r_mfarray)
+        switch MfType.storedType(mftype) {
+        case .Float:
+            return to_Bool_mm_greater(l_mfarray: l_mfarray, r_mfarray: r_mfarray, dummyU: Float.zero)
+        case .Double:
+            return to_Bool_mm_greater(l_mfarray: l_mfarray, r_mfarray: r_mfarray, dummyU: Double.zero)
+        }
+        //let diff = l_mfarray - r_mfarray
+        //return to_Bool(diff.clip(min: 0, max: nil))
     }
     /**
         Check left scalar is greater than right mfarray's elements in element-wise. Returned mfarray's type will be bool.
@@ -413,16 +458,16 @@ extension Matft{
            - r_scalar: right scalar conformed to MfTypable
     */
     public static func greater<T: MfTypable>(_ l_mfarray: MfArray, _ r_scalar: T) -> MfArray{
-        /* too slow, average is 0.03s...
         switch l_mfarray.storedType {
         case .Float:
-            return to_Bool_ms_op(l_mfarray: l_mfarray, r_scalar: Float.from(r_scalar), op: >)
+            //return to_Bool_ms_op(mfarray: l_mfarray, scalar: Float.from(r_scalar), op: >) // slower!!!!
+            return to_Bool_ms_greater(l_mfarray: l_mfarray, r_scalar: Float.from(r_scalar))
         case .Double:
-            return to_Bool_ms_op(l_mfarray: l_mfarray, r_scalar: Double.from(r_scalar), op: >)
+            return to_Bool_ms_greater(l_mfarray: l_mfarray, r_scalar: Double.from(r_scalar))
         }
-        */
-        let diff = l_mfarray - r_scalar
-        return to_Bool(diff.clip(min: 0, max: nil))
+        
+        //let diff = l_mfarray - r_scalar
+        //return to_Bool(diff.clip(min: 0, max: nil))
     }
     /**
         Check left scalar is greater than right mfarray's elements in element-wise. Returned mfarray's type will be bool.
@@ -431,8 +476,14 @@ extension Matft{
            - r_mfarray: right mfarray
     */
     public static func greater<T: MfTypable>(_ l_scalar: T, _ r_mfarray: MfArray) -> MfArray{
-        let diff = l_scalar - r_mfarray
-        return to_Bool(diff.clip(min: 0, max: nil))
+        switch r_mfarray.storedType {
+        case .Float:
+            return to_Bool_ms_less(l_mfarray: r_mfarray, r_scalar: Float.from(l_scalar))
+        case .Double:
+            return to_Bool_ms_less(l_mfarray: r_mfarray, r_scalar: Double.from(l_scalar))
+        }
+        //let diff = l_scalar - r_mfarray
+        //return to_Bool(diff.clip(min: 0, max: nil))
     }
     /**
         Check left mfarray's elements are greater equal than right ones in element-wise. Returned mfarray's type will be bool.
@@ -441,8 +492,15 @@ extension Matft{
             - r_mfarray: right mfarray
      */
     public static func greater_equal(_ l_mfarray: MfArray, _ r_mfarray: MfArray) -> MfArray{
-        let diff = l_mfarray - r_mfarray
-        return to_Bool(diff.sign() + Float(1))
+        let (l_mfarray, r_mfarray, mftype) = biop_broadcast_to(l_mfarray, r_mfarray)
+        switch MfType.storedType(mftype) {
+        case .Float:
+            return to_Bool_mm_greater(l_mfarray: r_mfarray, r_mfarray: l_mfarray, dummyU: Float.zero, lesseq: true)
+        case .Double:
+            return to_Bool_mm_greater(l_mfarray: r_mfarray, r_mfarray: l_mfarray, dummyU: Double.zero, lesseq: true)
+        }
+        //let diff = l_mfarray - r_mfarray
+        //return to_Bool(diff.sign() + Float(1))
     }
     /**
         Check left scalar is greater equal than right mfarray's elements in element-wise. Returned mfarray's type will be bool.
@@ -451,8 +509,14 @@ extension Matft{
            - r_scalar: right scalar conformed to MfTypable
     */
     public static func greater_equal<T: MfTypable>(_ l_mfarray: MfArray, _ r_scalar: T) -> MfArray{
-        let diff = l_mfarray - r_scalar
-        return to_Bool(diff.sign() + Float(1))
+        switch l_mfarray.storedType {
+        case .Float:
+            return to_Bool_ms_less(l_mfarray: l_mfarray, r_scalar: Float.from(r_scalar), greatereq: true)
+        case .Double:
+            return to_Bool_ms_less(l_mfarray: l_mfarray, r_scalar: Double.from(r_scalar), greatereq: true)
+        }
+        //let diff = l_mfarray - r_scalar
+        //return to_Bool(diff.sign() + Float(1))
     }
     /**
         Check left scalar is greater equal than right mfarray's elements in element-wise. Returned mfarray's type will be bool.
@@ -461,8 +525,14 @@ extension Matft{
            - r_mfarray: right mfarray
     */
     public static func greater_equal<T: MfTypable>(_ l_scalar: T, _ r_mfarray: MfArray) -> MfArray{
-        let diff = l_scalar - r_mfarray
-        return to_Bool(diff.sign() + Float(1))
+        switch r_mfarray.storedType {
+        case .Float:
+            return to_Bool_ms_greater(l_mfarray: r_mfarray, r_scalar: Float.from(l_scalar), lesseq: true)
+        case .Double:
+            return to_Bool_ms_greater(l_mfarray: r_mfarray, r_scalar: Double.from(l_scalar), lesseq: true)
+        }
+        //let diff = l_scalar - r_mfarray
+        //return to_Bool(diff.sign() + Float(1))
     }
     
     /**

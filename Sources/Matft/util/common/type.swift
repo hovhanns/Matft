@@ -28,7 +28,7 @@ internal func to_Bool(_ mfarray: MfArray, thresholdF: Float = 1e-5, thresholdD: 
     ret.mfdata._mftype = .Bool
     return ret
 }
-/*
+
 internal func to_Bool_mm_op<U: MfStorable>(l_mfarray: MfArray, r_mfarray: MfArray, op: (U, U) -> Bool) -> MfArray{
     assert(l_mfarray.shape == r_mfarray.shape, "call biop_broadcast_to first!")
     var retShape = l_mfarray.shape
@@ -47,37 +47,111 @@ internal func to_Bool_mm_op<U: MfStorable>(l_mfarray: MfArray, r_mfarray: MfArra
     
     return MfArray(mfdata: newdata, mfstructure: newmfstructure)
 }
-internal func to_Bool_ms_op<U: MfStorable>(l_mfarray: MfArray, r_scalar: U, op: (U, U) -> Bool) -> MfArray{
-    let r_scalar = Float.from(r_scalar)
-    let ret = l_mfarray.astype(.Float)
-    ret.withDataUnsafeMBPtrT(datatype: Float.self){
-        [unowned ret] (dataptr) in
-        var newptr = dataptr.map{ $0 > r_scalar ? Float.zero : Float(1) }
-        newptr.withUnsafeMutableBufferPointer{
-            dataptr.baseAddress!.moveAssign(from: $0.baseAddress!, count: ret.storedSize)
-        }
-    }
-    ret.mfdata._mftype = .Bool
-    return ret
-}
-internal func to_Bool_sm_op<U: MfStorable>(l_scalar: U, r_mfarray: MfArray, op: (U, U) -> Bool) -> MfArray{
-    var retShape = r_mfarray.shape
-    var i = 0
-    let newdata = withDummyDataMRPtr(.Bool, storedSize: r_mfarray.size){
+/**
+    - Important: Note that exchange l_mfarray and r_mfarray when use less
+ */
+internal func to_Bool_mm_greater<U: MfStorable>(l_mfarray: MfArray, r_mfarray: MfArray, dummyU: U, lesseq: Bool = false) -> MfArray{
+    assert(l_mfarray.shape == r_mfarray.shape, "call biop_broadcast_to first!")
+    let l_mfarray = check_contiguous(l_mfarray, .Row)
+    let r_mfarray = check_contiguous(r_mfarray, .Row)
+    var retShape = l_mfarray.shape
+    let retSize = l_mfarray.size
+    let newdata = withDummyDataMRPtr(.Bool, storedSize: l_mfarray.size){
         dstptr in
-        let dstptrT = dstptr.bindMemory(to: Float.self, capacity: r_mfarray.size)
-        r_mfarray.withContiguousDataUnsafeMPtrT(datatype: U.self){
-            rptr in
-            var val = op(l_scalar, rptr.pointee) ? Float(1) : Float.zero
-            (dstptrT + i).assign(from: &val, count: 1)
-            i += 1
+        let dstptrT = dstptr.bindMemory(to: Float.self, capacity: l_mfarray.size)
+        l_mfarray.withDataUnsafeMBPtrT(datatype: U.self){
+            lptr in
+            r_mfarray.withDataUnsafeMBPtrT(datatype: U.self){
+                rptr in
+                var newptr = lesseq ? zip(lptr, rptr).map{$0 <= $1 ? Float.zero : Float(1)} : zip(lptr, rptr).map{$0 > $1 ? Float.zero : Float(1)}
+                newptr.withUnsafeMutableBufferPointer{
+                    dstptrT.moveAssign(from: $0.baseAddress!, count: retSize)
+                }
+            }
         }
+        
     }
     let newmfstructure = create_mfstructure(&retShape, mforder: .Row)
     
     return MfArray(mfdata: newdata, mfstructure: newmfstructure)
 }
-*/
+// I don't know why this function is 2 times slower than below to_Bool_ms_greater...
+internal func to_Bool_ms_op<U: MfStorable>(mfarray: MfArray, scalar: U, op: (U, U) -> Bool) -> MfArray{
+    let scalar = U.from(scalar)
+    
+    //let mfarray = check_contiguous(mfarray)
+    var shape = mfarray.shape
+    var strides = mfarray.strides
+    
+    let newdata = withDummyDataMRPtr(.Bool, storedSize: mfarray.storedSize){
+        dstptr in
+        let dstptrT = dstptr.bindMemory(to: Float.self, capacity: mfarray.size)
+        mfarray.withDataUnsafeMBPtrT(datatype: U.self){
+            [unowned mfarray](srcptr) in
+            var newptr = srcptr.map{ op($0, scalar) ? Float.zero : Float(1) }
+            newptr.withUnsafeMutableBufferPointer{
+                dstptrT.moveAssign(from: $0.baseAddress!, count: mfarray.storedSize)
+            }
+            
+        }
+    }
+    
+    let newmfstructure = create_mfstructure(&shape, &strides)
+    return MfArray(mfdata: newdata, mfstructure: newmfstructure)
+}
+/**
+    - Important: if lesseq is true, <=
+ */
+internal func to_Bool_ms_greater<U: MfStorable>(l_mfarray: MfArray, r_scalar: U, lesseq: Bool = false) -> MfArray{
+    let scalar = U.from(r_scalar)
+    
+    //let mfarray = check_contiguous(mfarray)
+    var shape = l_mfarray.shape
+    var strides = l_mfarray.strides
+    
+    let newdata = withDummyDataMRPtr(.Bool, storedSize: l_mfarray.storedSize){
+        dstptr in
+        let dstptrT = dstptr.bindMemory(to: Float.self, capacity: l_mfarray.size)
+        l_mfarray.withDataUnsafeMBPtrT(datatype: U.self){
+            [unowned l_mfarray](srcptr) in
+            var newptr = lesseq ? srcptr.map{ $0 <= scalar ? Float.zero : Float(1) } : srcptr.map{ $0 > scalar ? Float.zero : Float(1) }
+            newptr.withUnsafeMutableBufferPointer{
+                dstptrT.moveAssign(from: $0.baseAddress!, count: mfarray.storedSize)
+            }
+            
+        }
+    }
+    
+    let newmfstructure = create_mfstructure(&shape, &strides)
+    return MfArray(mfdata: newdata, mfstructure: newmfstructure)
+}
+/**
+    - Important: if greatereq is true, >=
+ */
+internal func to_Bool_ms_less<U: MfStorable>(l_mfarray: MfArray, r_scalar: U, greatereq: Bool = false) -> MfArray{
+    let scalar = U.from(r_scalar)
+    
+    //let mfarray = check_contiguous(mfarray)
+    var shape = l_mfarray.shape
+    var strides = l_mfarray.strides
+    
+    let newdata = withDummyDataMRPtr(.Bool, storedSize: l_mfarray.storedSize){
+        dstptr in
+        let dstptrT = dstptr.bindMemory(to: Float.self, capacity: l_mfarray.size)
+        l_mfarray.withDataUnsafeMBPtrT(datatype: U.self){
+            [unowned l_mfarray](srcptr) in
+            var newptr = greatereq ? srcptr.map{ $0 >= scalar ? Float.zero : Float(1) } : srcptr.map{ $0 < scalar ? Float.zero : Float(1) }
+            newptr.withUnsafeMutableBufferPointer{
+                dstptrT.moveAssign(from: $0.baseAddress!, count: mfarray.storedSize)
+            }
+            
+        }
+    }
+    
+    let newmfstructure = create_mfstructure(&shape, &strides)
+    return MfArray(mfdata: newdata, mfstructure: newmfstructure)
+}
+
 /**
    - Important: this function creates copy bool mfarray, not view!
  */
